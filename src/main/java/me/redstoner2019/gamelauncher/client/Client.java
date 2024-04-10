@@ -8,10 +8,9 @@ import me.redstoner2019.gamelauncher.packets.download.*;
 import me.redstoner2019.serverhandling.*;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -123,17 +122,51 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                         String game = command.substring("getversions ".length());
                         System.out.println("Requesting game versions " + game);
                         sendObject(new RequestGameVersions(game));
-                    }
-                    if(command.startsWith("getgames")){
+                    }else if(command.startsWith("getgames")){
                         System.out.println("Requesting games");
                         sendObject(new RequestGamesPacket());
-                    }
-                    if(command.startsWith("startdownload")){
-                        String[] arg = command.split(" ");
-                        System.out.println("Requesting download of " + arg[1] + " version " + arg[2]);
-                        gameDownloading = arg[1];
-                        versionDownloaded = arg[2];
-                        sendObject(new RequestDownloadPacket(arg[1],arg[2]));
+                    }else if(command.startsWith("startdownload")){
+                        System.out.println("Game?");
+                        gameDownloading = scanner.nextLine();
+                        System.out.println("Version?");
+                        versionDownloaded = scanner.nextLine();
+                        System.out.println("Requesting download of " + gameDownloading + " version " + versionDownloaded);
+                        sendObject(new RequestDownloadPacket(gameDownloading,versionDownloaded));
+                    }else if(command.startsWith("startupload")){
+                        System.out.println("Game?");
+                        String game = scanner.nextLine();
+                        System.out.println("Version?");
+                        String version = scanner.nextLine();
+                        System.out.println("File location?");
+                        String fileLocation = scanner.nextLine();
+                        File file = new File(fileLocation);
+                        if(!file.exists()){
+                            System.out.println("File Not Found");
+                            continue;
+                        }
+                        try {
+                            long fileSize = Files.size(file.toPath());
+                            int BYTES_PER_PACKET = 1024;
+                            long packets = (fileSize/BYTES_PER_PACKET)+1;
+                            sendObject(new DownloadHeader(packets,fileSize,BYTES_PER_PACKET,file.getName(),game,version));
+
+                            int index = 0;
+
+                            FileInputStream inputStream = new FileInputStream(file);
+                            byte[] data = inputStream.readNBytes(BYTES_PER_PACKET);
+
+                            while (data.length != 0){
+                                sendObject(new DataPacket(index,data));
+                                data = inputStream.readNBytes(BYTES_PER_PACKET);
+                                index++;
+                            }
+                            sendObject(new DownloadEndPacket());
+                            System.out.println(index + " packets sent.");
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        System.out.println("Unknown command " + command);
                     }
                 }
             }

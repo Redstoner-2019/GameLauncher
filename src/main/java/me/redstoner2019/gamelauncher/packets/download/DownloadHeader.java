@@ -7,6 +7,8 @@ public class DownloadHeader extends Packet {
     private long bytes;
     private int bytesPerPacket;
     private String filename;
+    private String game;
+    private String version;
 
     public long getPackets() {
         return packets;
@@ -40,10 +42,28 @@ public class DownloadHeader extends Packet {
         this.filename = filename;
     }
 
-    public DownloadHeader(long packets, long bytes, int bytesPerPacket, String filename) {
+    public String getGame() {
+        return game;
+    }
+
+    public void setGame(String game) {
+        this.game = game;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public DownloadHeader(long packets, long bytes, int bytesPerPacket, String filename, String game, String version) {
         this.packets = packets;
         this.bytes = bytes;
         this.bytesPerPacket = bytesPerPacket;
         this.filename = filename;
+        this.game = game;
+        this.version = version;
     }
 }

@@ -2,6 +2,7 @@ package me.redstoner2019.gamelauncher.server;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,6 +24,16 @@ import org.json.JSONArray;
 public class Server extends me.redstoner2019.serverhandling.Server {
     public static File configFile = new File("data/config/config.json");
     public static final int PACKET_SIZE = 1024;
+
+
+    public static List<DataPacket> recieve_data = new ArrayList<>();
+    public static String recieve_filename = "";
+    public static long recieve_bytes = 0;
+    public static long recieve_BYTES_PER_PACKET = 0;
+    public static long recieve_packetsAwaiting = 0;
+    public static String recieve_gameDownloading = "";
+    public static String recieve_versionDownloaded = "";
+
     public static void main(String[] args) throws Exception {
         if(!configFile.exists()){
             new File("data/config").mkdirs();
@@ -58,6 +69,47 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                 handler.startPacketListener(new PacketListener() {
                     @Override
                     public void packetRecievedEvent(Object packet) {
+                        if(packet instanceof DownloadHeader p){
+                            recieve_data = new ArrayList<>();
+                            recieve_filename = p.getFilename();
+                            recieve_bytes = p.getBytes();
+                            recieve_packetsAwaiting = p.getPackets();
+                            recieve_gameDownloading = p.getGame();
+                            recieve_versionDownloaded = p.getVersion();
+                            recieve_BYTES_PER_PACKET = p.getBytesPerPacket();
+                        }
+                        if(packet instanceof DataPacket p){
+                            recieve_data.add(p);
+                        }
+                        if(packet instanceof DownloadEndPacket p){
+                            if(!new File("data/Games/").exists()){
+                                new File("data/Games/").mkdirs();
+                            }
+                            if(!new File("data/Games/" + recieve_gameDownloading).exists()){
+                                new File("data/Games/" + recieve_gameDownloading).mkdirs();
+                            }
+                            if(!new File("data/Games/" + recieve_gameDownloading + "/" + recieve_versionDownloaded.replaceAll("\\.","_")).exists()){
+                                new File("data/Games/" + recieve_gameDownloading + "/" + recieve_versionDownloaded.replaceAll("\\.","_")).mkdirs();
+                            }
+                            System.out.println("Writing packets");
+
+                            try {
+                                FileOutputStream outputStream = new FileOutputStream("data/Games/" + recieve_gameDownloading + "/" + recieve_versionDownloaded.replaceAll("\\.","_") + "/" + recieve_filename);
+                                for(DataPacket pa : recieve_data){
+                                    outputStream.write(pa.getData());
+                                }
+                                outputStream.close();
+
+                                JSONArray versions = serverData.getJSONObject(recieve_gameDownloading).getJSONArray("versions");
+                                versions.put(recieve_versionDownloaded);
+                                Util.writeStringToFile(Util.prettyJSON(serverData.toString()),configFile);
+                                System.out.println("Complete");
+                            } catch (Exception e) {
+                                System.out.println("An error occured");
+                                e.printStackTrace();
+                                return;
+                            }
+                        }
                         if(packet instanceof RequestGamesPacket){
                             System.out.println("Request Games");
                             List<String> games = new ArrayList<>();
@@ -82,7 +134,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                 try {
                                     String file = "data/Games/" + p.getGame() + "/" + (p.getVersion().replaceAll("\\.","_")) + "/" + gameFile;
                                     long packets = (Files.size(Paths.get(file))/PACKET_SIZE) + 1;
-                                    handler.sendObject(new DownloadHeader(packets,Files.size(Paths.get(file)),PACKET_SIZE,gameFile));
+                                    handler.sendObject(new DownloadHeader(packets,Files.size(Paths.get(file)),PACKET_SIZE,gameFile,p.getGame(),p.getVersion()));
 
                                     int index = 0;
 
