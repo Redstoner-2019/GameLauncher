@@ -19,6 +19,7 @@ public class Util {
     }
 
     public static void writeStringToFile(String str, File file) throws IOException {
+        str = prettyJSON(str);
         FileOutputStream outputStream = new FileOutputStream(file);
         byte[] strToBytes = str.getBytes();
         outputStream.write(strToBytes);

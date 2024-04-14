@@ -36,7 +36,10 @@ public class Client {
             in = new ObjectInputStream(socket.getInputStream());
             out = new ObjectOutputStream(socket.getOutputStream());
             isConnected = true;
-            if(connectionSuccessEvent != null) connectionSuccessEvent.onConnectionSuccess();
+            if(connectionSuccessEvent != null) {
+                connectionSuccessEvent.onConnectionSuccess();
+                System.out.println("connectionSuccessEvent");
+            }
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -125,6 +128,7 @@ public class Client {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
+                System.out.println("Started sender");
                 while (true){
                     synchronized (REFERENCE){
                         if(!isConnected) {

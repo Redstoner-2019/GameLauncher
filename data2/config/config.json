@@ -1,0 +1,12 @@
+{
+  "GTA" : {
+    "filename" : "gta.exe",
+    "versions" : [ "1.0", "1.1" ],
+    "name" : "GTA"
+  },
+  "Minecraft" : {
+    "filename" : "minecraft.exe",
+    "versions" : [ "1.0", "1.1", "1.2", "1.2", "1.2" ],
+    "name" : "Minecraft"
+  }
+}

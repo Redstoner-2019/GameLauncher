@@ -9,6 +9,7 @@ public class DownloadHeader extends Packet {
     private String filename;
     private String game;
     private String version;
+    private String json;
 
     public long getPackets() {
         return packets;

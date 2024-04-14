@@ -4,7 +4,7 @@ import me.redstoner2019.serverhandling.Packet;
 
 public class DataPacket extends Packet {
     private int id;
-    private int sum;
+    private int sum = 0;
     private byte[] data;
 
     public int getId() {

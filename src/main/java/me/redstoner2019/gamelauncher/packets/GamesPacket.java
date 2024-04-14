@@ -5,17 +5,17 @@ import me.redstoner2019.serverhandling.Packet;
 import java.util.List;
 
 public class GamesPacket extends Packet {
-    private List<String> games;
+    private String gamesJSON;
 
-    public List<String> getGames() {
-        return games;
+    public String getGamesJSON() {
+        return gamesJSON;
     }
 
-    public void setGames(List<String> games) {
-        this.games = games;
+    public void setGamesJSON(String gamesJSON) {
+        this.gamesJSON = gamesJSON;
     }
 
-    public GamesPacket(List<String> games) {
-        this.games = games;
+    public GamesPacket(String gamesJSON) {
+        this.gamesJSON = gamesJSON;
     }
 }

@@ -58,29 +58,24 @@ public class ClientHandler {
             @Override
             public void run() {
                 while (true){
-                    synchronized (REFERENCE){
-                        if(!isConnected() || socket.isClosed()) {
-                            toSend.clear();
-                            break;
-                        }
-                        if(toSend.isEmpty()) {
-                            try {
-                                REFERENCE.wait(1);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            continue;
-                        }
-                        while (!toSend.isEmpty()){
-                            Object o = toSend.get(0);
-                            toSend.remove(0);
-                            if(o == null) continue;
-                            try {
+                    if(!isConnected() || socket.isClosed()) {
+                        toSend.clear();
+                        break;
+                    }
+                    if(toSend.isEmpty()) {
+                        continue;
+                    }
+                    while (!toSend.isEmpty()){
+                        Object o = toSend.get(0);
+                        toSend.remove(0);
+                        if(o == null) continue;
+                        try {
+                            synchronized (REFERENCE){
                                 out.writeObject(o);
                                 out.flush();
-                            } catch (IOException e) {
-                                e.printStackTrace();
                             }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -141,6 +136,7 @@ public class ClientHandler {
                     }
                     listener.packetRecievedEvent((Packet) o);
                 }
+                System.out.println("End");
             }
         });
         t.start();
