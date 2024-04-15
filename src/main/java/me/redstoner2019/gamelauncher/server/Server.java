@@ -14,6 +14,7 @@ import me.redstoner2019.configuration.Game;
 import me.redstoner2019.configuration.Type;
 import me.redstoner2019.configuration.Version;
 import me.redstoner2019.gamelauncher.packets.GamesPacket;
+import me.redstoner2019.gamelauncher.packets.JSONRequest;
 import me.redstoner2019.gamelauncher.packets.RequestGamesPacket;
 import me.redstoner2019.gamelauncher.packets.download.*;
 import me.redstoner2019.serverhandling.ClientConnectEvent;
@@ -199,6 +200,27 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                 System.out.println("An error occured");
                                 e.printStackTrace();
                                 return;
+                            }
+                        }
+
+                        if(packet instanceof JSONRequest p){
+                            JSONObject object = new JSONObject(p.getJson());
+                            switch (object.getString("header")){
+                                case "request": {
+                                    switch (object.getString("data")){
+                                        case "client-update" : {
+                                            JSONObject data = new JSONObject();
+                                            data.put("header","update-response");
+                                            data.put("data",configuration.getGame("odlauncher").versions.get(0).name);
+                                            System.out.println(object);
+                                            System.out.println("------------------");
+                                            System.out.println(data);
+                                            handler.sendObject(new JSONRequest(data.toString()));
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
                             }
                         }
 

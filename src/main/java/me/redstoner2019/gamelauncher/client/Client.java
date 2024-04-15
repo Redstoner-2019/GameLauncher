@@ -2,6 +2,7 @@ package me.redstoner2019.gamelauncher.client;
 
 import me.redstoner2019.Main;
 import me.redstoner2019.gamelauncher.packets.GamesPacket;
+import me.redstoner2019.gamelauncher.packets.JSONRequest;
 import me.redstoner2019.gamelauncher.packets.RequestGamesPacket;
 import me.redstoner2019.gamelauncher.packets.VersionsPacket;
 import me.redstoner2019.gamelauncher.packets.download.*;
@@ -16,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,6 +26,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Client extends me.redstoner2019.serverhandling.Client {
+    public static String currentVersion = "1.1";
+    public static String updateVersion = "";
     public static List<DataPacket> data = new ArrayList<>();
     public static String filename = "";
     public static long bytes = 0;
@@ -52,6 +56,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     public static JButton connectButton = new JButton("Connect");
     public static JButton disconnectButton = new JButton("Disconnect");
     public static JButton launchSelected = new JButton("Launch");
+    public static JButton searchForClientUpdates = new JButton("Search for Updates");
+    public static JButton downloadClientUpdate = new JButton("Download Update");
+    public static JLabel clientUpdateLabel = new JLabel("");
     public static JScrollPane gameScrollPane = new JScrollPane(gamesJList);
     public static JScrollPane versionScrollPane = new JScrollPane(versionsJList);
     public static JScrollPane typesScrollPane = new JScrollPane(typesJList);
@@ -123,6 +130,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 downloadButton.setEnabled(false);
                 uploadFile.setEnabled(false);
                 launchSelected.setEnabled(false);
+
+                searchForClientUpdates.setEnabled(false);
+                downloadClientUpdate.setEnabled(false);
             }
         });
         setConnectionFailedEvent(new ConnectionFailedEvent() {
@@ -139,6 +149,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 downloadButton.setEnabled(false);
                 uploadFile.setEnabled(false);
                 launchSelected.setEnabled(false);
+
+                searchForClientUpdates.setEnabled(false);
+                downloadClientUpdate.setEnabled(false);
             }
         });
         setOnConnectionSuccessEvent(new ConnectionSuccessEvent() {
@@ -155,6 +168,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 downloadButton.setEnabled(true);
                 uploadFile.setEnabled(true);
                 launchSelected.setEnabled(true);
+
+                searchForClientUpdates.setEnabled(true);
+                downloadClientUpdate.setEnabled(false);
             }
         });
 
@@ -222,6 +238,19 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                             throw new RuntimeException(e);
                         }
                     }
+                    if(gameDownloading.equals("odlauncher")){
+                        try {
+                            String jarPath = me.redstoner2019.serverhandling.Client.class
+                                    .getProtectionDomain()
+                                    .getCodeSource()
+                                    .getLocation()
+                                    .toURI()
+                                    .getPath();
+                            outputFile = new File(jarPath);
+                        } catch (URISyntaxException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                     try {
                         FileOutputStream outputStream = new FileOutputStream(outputFile);
                         for(DataPacket p : data){
@@ -241,13 +270,17 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                         JSONObject object = new JSONObject();
                         object.put("version",versionDownloaded);
                         object.put("filename",outputFile.getName());
-                        Util.writeStringToFile(Util.prettyJSON(object.toString()),new File(outputFile.getParentFile() + "/downloadinfo.json"));
+                        if(!gameDownloading.equals("odlauncher")) Util.writeStringToFile(Util.prettyJSON(object.toString()),new File(outputFile.getParentFile() + "/downloadinfo.json"));
                     } catch (Exception e) {
                         System.out.println("An error occured");
                         e.printStackTrace();
                         return;
                     }
                     System.out.println("Download complete");
+                    if(gameDownloading.equals("odlauncher")){
+                        clientUpdateLabel.setText("Update Successful. Please restart the launcher now.");
+                        clientUpdateLabel.setForeground(Color.GREEN);
+                    }
                 }
                 if(packet instanceof GamesPacket p){
                     System.out.println("---------------");
@@ -267,6 +300,26 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     System.out.println("Download unavailable " + p.getReason());
                     connectionStatus.setForeground(Color.RED);
                     connectionStatus.setText("failed: " + p.getReason());
+                }
+                if(packet instanceof JSONRequest p){
+                    JSONObject object = new JSONObject(p.getJson());
+                    switch (object.getString("header")){
+                        case "update-response" : {
+                            String versionRecieved = object.getString("data");
+                            if(!currentVersion.equals(versionRecieved)){
+                                clientUpdateLabel.setText("Update found: " + versionRecieved + " current version: " + currentVersion);
+                                updateVersion = versionRecieved;
+                                clientUpdateLabel.setForeground(new Color(150,100,0));
+                                clientUpdateLabel.setForeground(Color.RED);
+                                downloadClientUpdate.setEnabled(true);
+                            } else {
+                                clientUpdateLabel.setText("You are on the newest version already");
+                                clientUpdateLabel.setForeground(Color.GREEN);
+                                downloadClientUpdate.setEnabled(false);
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         });
@@ -298,12 +351,17 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         refreshButton.setBounds(925,200,panel.getWidth()-950,30);
         downloadButton.setBounds(925,250,panel.getWidth()-950,30);
         uploadFile.setBounds(925,300,panel.getWidth()-950,30);
-        typesScrollPane.setBounds(925,350,panel.getWidth()-950,panel.getHeight()-470);
-        gameScrollPane.setBounds(50,50,400,panel.getHeight()-100);
-        versionScrollPane.setBounds(500,50,400,panel.getHeight()-100);
+        clientUpdateLabel.setBounds(925,450,panel.getWidth()-950,30);
+        searchForClientUpdates.setBounds(925,500,panel.getWidth()-950,30);
+        downloadClientUpdate.setBounds(925,550,panel.getWidth()-950,30);
+
+        gameScrollPane.setBounds(50,50,425,panel.getHeight()-100);
+        versionScrollPane.setBounds(500,50,400,325);
+        typesScrollPane.setBounds(500,400,400,panel.getHeight()-450);
+
         progressBar.setBounds(50,panel.getHeight()-40,850,30);
-        connectionStatus.setBounds(900,panel.getHeight()-40,panel.getWidth()-900,30);
-        launchSelected.setBounds(925,panel.getHeight()-100,panel.getWidth()-950,30);
+        connectionStatus.setBounds(900,10,panel.getWidth()-900,30);
+        launchSelected.setBounds(925,panel.getHeight()-40,panel.getWidth()-950,30);
 
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
         titleLabel.setVerticalAlignment(JLabel.CENTER);
@@ -313,6 +371,23 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         connectionStatus.setForeground(Color.RED);
 
         titleLabel.setFont(new Font(titleLabel.getFont().getFontName(),Font.PLAIN,30));
+
+        searchForClientUpdates.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JSONObject object = new JSONObject();
+                object.put("header","request");
+                object.put("data","client-update");
+                sendObject(new JSONRequest(object.toString()));
+            }
+        });
+        downloadClientUpdate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                downloadClientUpdate.setEnabled(false);
+                startDownload("odlauncher",updateVersion,"client");
+            }
+        });
 
         launchSelected.addActionListener(new ActionListener() {
             @Override
@@ -543,6 +618,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         panel.add(disconnectButton);
         panel.add(launchSelected);
         panel.add(typesScrollPane);
+        panel.add(clientUpdateLabel);
+        panel.add(searchForClientUpdates);
+        panel.add(downloadClientUpdate);
 
         progressBar.setMinimum(0);
         progressBar.setMaximum(100);
