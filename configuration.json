@@ -1,0 +1,18 @@
+{
+  "Uno" : {
+    "1.0" : {
+      "server" : {
+        "file" : "",
+        "size" : 0,
+        "changes" : "",
+        "title" : ""
+      },
+      "client" : {
+        "file" : "",
+        "size" : 0,
+        "changes" : "",
+        "title" : ""
+      }
+    }
+  }
+}

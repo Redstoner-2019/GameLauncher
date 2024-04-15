@@ -9,6 +9,10 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import me.redstoner2019.Main;
+import me.redstoner2019.configuration.Configuration;
+import me.redstoner2019.configuration.Game;
+import me.redstoner2019.configuration.Type;
+import me.redstoner2019.configuration.Version;
 import me.redstoner2019.gamelauncher.packets.GamesPacket;
 import me.redstoner2019.gamelauncher.packets.RequestGamesPacket;
 import me.redstoner2019.gamelauncher.packets.download.*;
@@ -28,10 +32,9 @@ public class Server extends me.redstoner2019.serverhandling.Server {
     public static long recieve_packetsAwaiting = 0;
     public static String recieve_gameDownloading = "";
     public static String recieve_versionDownloaded = "";
-    public static JSONObject gameLocations;
-    public static JSONObject gameList;
+    public static String recieve_FILE_TYPE = "";
+    public static Configuration configuration;
     public static File gameLocationsFile = new File("data/config/locations.json");
-    public static File gameListFile = new File("data/config/games.json");
 
     public static void main(String[] args) throws Exception {
         File serverProperties = new File("server.properties");
@@ -63,25 +66,9 @@ public class Server extends me.redstoner2019.serverhandling.Server {
             gameLocationsFile.createNewFile();
             Util.writeStringToFile("{ }",gameLocationsFile);
         }
-        if(!gameListFile.exists()){
-            gameListFile.getParentFile().mkdirs();
-            gameListFile.createNewFile();
-            Util.writeStringToFile("{ }",gameListFile);
-        }
 
-        /*try{
-            System.out.println(new File("data/games").getCanonicalPath());
-            new File("data/games").delete();
-        } catch (Exception ex){
-            ex.printStackTrace();
-        }
-        gameList = new JSONObject();
-        gameLocations = new JSONObject();
-        save();
-        System.out.println("Reset complete");*/
-
-        gameLocations = new JSONObject(Util.readFile(gameLocationsFile));
-        gameList = new JSONObject(Util.readFile(gameListFile));
+        configuration = new Configuration(gameLocationsFile.getPath());
+        configuration.load();
 
         setClientConnectEvent(new ClientConnectEvent() {
             @Override
@@ -103,10 +90,15 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                             recieve_filename = p.getFilename();
                             recieve_bytes = p.getBytes();
                             recieve_packetsAwaiting = p.getPackets();
-                            recieve_gameDownloading = p.getGame();
+                            recieve_gameDownloading = p.getGame().toLowerCase();
                             recieve_versionDownloaded = p.getVersion();
                             recieve_BYTES_PER_PACKET = p.getBytesPerPacket();
-                            if(hasVersion(recieve_gameDownloading,recieve_versionDownloaded)){
+                            recieve_FILE_TYPE = p.getFileType();
+                            System.out.println("Requested " + recieve_gameDownloading + " " + recieve_versionDownloaded + " " + recieve_FILE_TYPE);
+                            if(!configuration.hasGame(recieve_gameDownloading)){
+                                configuration.addGame(new Game(recieve_gameDownloading));
+                            }
+                            if(configuration.getGame(recieve_gameDownloading).hasVersion(recieve_versionDownloaded) && configuration.getGame(recieve_gameDownloading).getVersion(recieve_versionDownloaded).hasType(recieve_FILE_TYPE)){
                                 handler.sendObject(new DownloadUnavailablePacket("Version already exists"));
                             } else handler.sendObject(new ReadyForDownload());
                         }
@@ -122,22 +114,48 @@ public class Server extends me.redstoner2019.serverhandling.Server {
 
                         if(packet instanceof DownloadEndPacket p){
                             System.out.println("Writing packets");
+                            Game game;
+                            Version version;
+                            Type type;
 
-                            addVersion(recieve_gameDownloading,recieve_versionDownloaded,recieve_filename,"Update " + recieve_versionDownloaded,"None",recieve_bytes);
-                            if(gameExists(recieve_gameDownloading)){
-                                try{
-                                    String gameFile = getGameFile(recieve_gameDownloading,recieve_versionDownloaded);
-                                    File file = new File(gameFile);
-                                    if(!file.exists()){
-                                        file.getParentFile().mkdirs();
-                                        file.createNewFile();
-                                    }
-                                }catch (Exception e){
-                                    e.printStackTrace();
+                            if(configuration.hasGame(recieve_gameDownloading)) {
+                                game = configuration.getGame(recieve_gameDownloading);
+                            } else {
+                                game = new Game(recieve_gameDownloading);
+                                configuration.addGame(game);
+                            }
+
+                            if(game.hasVersion(recieve_versionDownloaded)){
+                                version = game.getVersion(recieve_versionDownloaded);
+                                System.out.println("Version " + version);
+                            } else {
+                                version = new Version(recieve_versionDownloaded);
+                                game.addVersion(version);
+                            }
+
+                            if(version.hasType(recieve_FILE_TYPE)){
+                                type = version.getType(recieve_FILE_TYPE);
+                                System.out.println("Filetype found");
+                            } else {
+                                type = new Type(recieve_FILE_TYPE);
+                                type.changes = "none";
+                                type.title = "title";
+                                type.size = recieve_bytes;
+                                type.file = "data/games/" + game.name + "/" + version.name + "/" + type.name + "/" + recieve_filename;
+                                version.addType(type);
+                            }
+
+                            if(!new File(type.file).exists()){
+                                File file = new File(type.file);
+                                file.getParentFile().mkdirs();
+                                try {
+                                    file.createNewFile();
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
                                 }
                             }
 
-                            String gameFile = getGameFile(recieve_gameDownloading,recieve_versionDownloaded);
+                            String gameFile = type.file;
                             File file = new File(gameFile);
                             try {
                                 FileOutputStream outputStream = new FileOutputStream(file);
@@ -176,6 +194,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                 recieve_data.clear();
                                 outputStream.close();
                                 System.out.println("Complete");
+                                configuration.save();
                             } catch (Exception e) {
                                 System.out.println("An error occured");
                                 e.printStackTrace();
@@ -185,67 +204,92 @@ public class Server extends me.redstoner2019.serverhandling.Server {
 
                         if(packet instanceof RequestGamesPacket){
                             System.out.println("Request Games");
-                            handler.sendObject(new GamesPacket(gameList.toString()));
+                            JSONObject games = new JSONObject();
+
+                            for(Game game : configuration.games){
+                                JSONArray versions = new JSONArray();
+                                JSONObject gameO = new JSONObject();
+                                for(Version v : game.versions){
+                                    JSONArray types = new JSONArray();
+                                    for(Type t : v.types){
+                                        types.put(t.name);
+                                    }
+                                    gameO.put(v.name,types);
+                                    versions.put(v.name);
+                                }
+                                gameO.put("versions",versions);
+                                games.put(game.name,gameO);
+                            }
+
+                            handler.sendObject(new GamesPacket(games.toString()));
                         }
 
                         if(packet instanceof RequestDownloadPacket p){
                             Thread downloadThread = new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    System.out.println("Request Download " + p.getGame() + " " + gameExists(p.getGame()));
-                                    if(gameExists(p.getGame())){
-                                        String gameFile = getGameFile(p.getGame(),p.getVersion());
-                                        try {
-                                            File file = new File(gameFile);
-                                            if(!file.exists()){
-                                                file.getParentFile().mkdirs();
-                                                file.createNewFile();
-                                                FileOutputStream out = new FileOutputStream(file);
-                                                Random random = new Random();
-                                                byte[] bytes = new byte[1024];
-                                                random.nextBytes(bytes);
-                                                out.write(bytes);
-                                                out.close();
-                                            }
+                                    try{
+                                        Game game = configuration.getGame(p.getGame());
+                                        Version version = game.getVersion(p.getVersion());
+                                        Type type = version.getType(p.getType());
+                                        System.out.println("Request Download " + p.getGame() + " " + configuration.hasGame(p.getGame()));
+                                        if(configuration.hasGame(p.getGame())){
+                                            String gameFile = type.file;
+                                            try {
+                                                File file = new File(gameFile);
+                                                if(!file.exists()){
+                                                    file.getParentFile().mkdirs();
+                                                    file.createNewFile();
+                                                    FileOutputStream out = new FileOutputStream(file);
+                                                    Random random = new Random();
+                                                    byte[] bytes = new byte[1024];
+                                                    random.nextBytes(bytes);
+                                                    out.write(bytes);
+                                                    out.close();
+                                                }
 
-                                            long size = Files.size(file.toPath());
+                                                long size = Files.size(file.toPath());
 
-                                            PACKET_SIZE = (int) Math.max((double)size/500.0,Main.DEFAULT_SIZE);
+                                                PACKET_SIZE = (int) Math.max((double)size/500.0,Main.DEFAULT_SIZE);
 
-                                            long packets = (long) Math.ceil((double) size /PACKET_SIZE);
-                                            handler.sendObject(new DownloadHeader(packets,size,PACKET_SIZE,gameFile,p.getGame(),p.getVersion()));
+                                                long packets = (long) Math.ceil((double) size /PACKET_SIZE);
+                                                handler.sendObject(new DownloadHeader(packets,size,PACKET_SIZE,gameFile,p.getGame(),p.getVersion(),p.getType()));
 
-                                            int index = 0;
+                                                int index = 0;
 
-                                            FileInputStream inputStream = new FileInputStream(file);
-                                            byte[] data = inputStream.readNBytes(PACKET_SIZE);
+                                                FileInputStream inputStream = new FileInputStream(file);
+                                                byte[] data = inputStream.readNBytes(PACKET_SIZE);
 
-                                            while (data.length != 0){
-                                                handler.sendObject(new DataPacket(index,data));
-                                                synchronized (ack){
-                                                    try {
-                                                        ack.wait(2000);
-                                                    } catch (InterruptedException e) {
-                                                        throw new RuntimeException(e);
+                                                while (data.length != 0){
+                                                    handler.sendObject(new DataPacket(index,data));
+                                                    synchronized (ack){
+                                                        try {
+                                                            ack.wait(2000);
+                                                        } catch (InterruptedException e) {
+                                                            throw new RuntimeException(e);
+                                                        }
                                                     }
+                                                    if(ack.getSum() == 0){
+                                                        //System.out.print("Packet loss - ");
+                                                        continue;
+                                                    }
+                                                    ack.setSum(0);
+                                                    data = inputStream.readNBytes(PACKET_SIZE);
+                                                    index++;
                                                 }
-                                                if(ack.getSum() == 0){
-                                                    //System.out.print("Packet loss - ");
-                                                    continue;
-                                                }
-                                                ack.setSum(0);
-                                                data = inputStream.readNBytes(PACKET_SIZE);
-                                                index++;
+                                                handler.sendObject(new DownloadEndPacket());
+                                                System.out.println(index + " packets sent.");
+                                            } catch (IOException e) {
+                                                System.out.println(e.getLocalizedMessage());
+                                                handler.sendObject(new DownloadUnavailablePacket("Server Error"));
                                             }
-                                            handler.sendObject(new DownloadEndPacket());
-                                            System.out.println(index + " packets sent.");
-                                        } catch (IOException e) {
-                                            System.out.println(e.getLocalizedMessage());
-                                            handler.sendObject(new DownloadUnavailablePacket("Server Error"));
+                                        } else {
+                                            handler.sendObject(new DownloadUnavailablePacket("Game Not Found"));
                                         }
-                                    } else {
-                                        handler.sendObject(new DownloadUnavailablePacket("Game Not Found"));
+                                    }catch (Exception e){
+                                        handler.sendObject(new DownloadUnavailablePacket("Server Error"));
                                     }
+
                                 }
                             });
                             downloadThread.start();
@@ -255,7 +299,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
             }
         });
 
-        Thread consoleThread = new Thread(new Runnable() {
+        /*Thread consoleThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 Scanner scanner = new Scanner(System.in);
@@ -296,7 +340,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                         }
                     } else if(arguments.length == 2) {
                         if(command.equalsIgnoreCase("addversion")){
-                            if(addVersion(arguments[0],arguments[1],arguments[0] + ".txt","Update " + arguments[1], "change1\nchange2\nchange3",recieve_bytes)){
+                            if(addVersion(arguments[0],arguments[1],arguments[0] + ".txt","Update " + arguments[1], "change1\nchange2\nchange3",recieve_bytes,"none")){
                                 System.out.println("Successfully added version " + arguments[1] + " to game " + arguments[0]);
                             } else {
                                 System.out.println("Failed to add version " + arguments[1] + " to game " + arguments[0]);
@@ -304,7 +348,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                             continue;
                         }
                         if(command.equalsIgnoreCase("getfile")){
-                            System.out.println(getGameFile(arguments[0],arguments[1]));
+                            //System.out.println(getGameFile(arguments[0],arguments[1]));
                             continue;
                         }
                     } else if(arguments.length == 3) {
@@ -313,7 +357,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
 
                     } else if(arguments.length == 5) {
                         if(command.equalsIgnoreCase("addversion")){
-                            if(addVersion(arguments[0],arguments[1],arguments[2],arguments[3], arguments[4],0)){
+                            if(addVersion(arguments[0],arguments[1],arguments[2],arguments[3], arguments[4],0,"none")){
                                 System.out.println("Successfully added version " + arguments[1] + " to game " + arguments[0]);
                             } else {
                                 System.out.println("Failed to add version " + arguments[1] + " to game " + arguments[0]);
@@ -329,94 +373,9 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                 }
             }
         });
-        consoleThread.start();
+        consoleThread.start();*/
 
         setup(PORT);
         start();
-    }
-    public static boolean addGame(String game){
-        game = game.toLowerCase();
-        if(gameList.has(game)){
-            return false;
-        } else {
-            JSONObject gameObject = new JSONObject();
-            gameObject.put("versions",new JSONArray());
-            gameList.put(game,gameObject);
-
-            JSONObject gameObjectFile = new JSONObject();
-            gameObjectFile.put("versions",new JSONArray());
-            gameLocations.put(game,gameObjectFile);
-
-            save();
-            return true;
-        }
-    }
-    public static boolean addVersion(String game, String version, String filename, String updateTitle, String changes, long fileSize){
-        game = game.toLowerCase();
-        if(!gameExists(game)){
-            if(!addGame(game)) return false;
-        }
-        if(!hasVersion(game,version)){
-            JSONArray versions = gameList.getJSONObject(game.toLowerCase()).getJSONArray("versions");
-            versions.put(version);
-
-            JSONArray versionsLocations = gameLocations.getJSONObject(game.toLowerCase()).getJSONArray("versions");
-            versionsLocations.put(version);
-
-            JSONObject versionObject = new JSONObject();
-            versionObject.put("file","data/games/" + game + "/" + version + "/" + filename);
-            versionObject.put("title",updateTitle);
-            versionObject.put("changes",changes);
-            versionObject.put("size",fileSize);
-            gameLocations.getJSONObject(game.toLowerCase()).put(version,versionObject);
-
-            save();
-            return true;
-        } else {
-            return false;
-        }
-    }
-    public static boolean gameExists(String game){
-        game = game.toLowerCase();
-        return gameList.has(game.toLowerCase());
-    }
-    public static boolean hasVersion(String game, String version){
-        game = game.toLowerCase();
-        if(!gameExists(game)) return false;
-        JSONArray versions = gameList.getJSONObject(game.toLowerCase()).getJSONArray("versions");
-        for(Object o : versions){
-            String v = (String) o;
-            if(v.equals(version)) return true;
-        }
-        return false;
-    }
-    public static String getGameFile(String game, String version){
-        game = game.toLowerCase();
-        if(!hasVersion(game,version)) return null;
-        JSONObject gameObject = gameLocations.getJSONObject(game);
-        JSONObject versionsObject = gameObject.getJSONObject(version);
-        return versionsObject.getString("file");
-    }
-    public static String getChanges(String game, String version){
-        game = game.toLowerCase();
-        if(!hasVersion(game,version)) return null;
-        JSONObject gameObject = gameLocations.getJSONObject(game);
-        JSONObject versionsObject = gameObject.getJSONObject(version);
-        return versionsObject.getString("changes");
-    }
-    public static String getUpdateTitle(String game, String version){
-        game = game.toLowerCase();
-        if(!hasVersion(game,version)) return null;
-        JSONObject gameObject = gameLocations.getJSONObject(game);
-        JSONObject versionsObject = gameObject.getJSONObject(version);
-        return versionsObject.getString("title");
-    }
-    public static void save(){
-        try {
-            Util.writeStringToFile(Util.prettyJSON(gameList.toString()),gameListFile);
-            Util.writeStringToFile(Util.prettyJSON(gameLocations.toString()),gameLocationsFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

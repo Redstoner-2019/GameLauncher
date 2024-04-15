@@ -1,0 +1,12 @@
+{
+  "Uno" : {
+    "1.0" : {
+      "client" : {
+        "file" : "path/to/file.json",
+        "size" : 101,
+        "changes" : "none",
+        "title" : "none"
+      }
+    }
+  }
+}

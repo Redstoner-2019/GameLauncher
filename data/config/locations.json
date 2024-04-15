@@ -1,32 +1,12 @@
 {
-  "test" : {
-    "test" : {
-      "file" : "data/games/test/test/big.mp4",
-      "size" : 104711340,
-      "changes" : "None",
-      "title" : "Update test"
-    },
-    "versions" : [ "test" ]
-  },
-  "uno" : {
+  "timer" : {
     "1.0" : {
-      "file" : "data/games/uno/1.0/small.jar",
-      "size" : 11610572,
-      "changes" : "None",
-      "title" : "Update 1.0"
-    },
-    "1.1" : {
-      "file" : "data/games/uno/1.1/small.jar",
-      "size" : 11610572,
-      "changes" : "None",
-      "title" : "Update 1.1"
-    },
-    "versions" : [ "1.0", "1.1", "1.5.3" ],
-    "1.5.3" : {
-      "file" : "data/games/uno/1.5.3/UNO.jar",
-      "size" : 11610572,
-      "changes" : "None",
-      "title" : "Update 1.5.3"
+      "Client" : {
+        "file" : "data/games/timer/1.0/Client/Timer.jar",
+        "size" : 7565,
+        "changes" : "none",
+        "title" : "title"
+      }
     }
   }
 }

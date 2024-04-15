@@ -5,6 +5,15 @@ import me.redstoner2019.serverhandling.Packet;
 public class RequestDownloadPacket extends Packet {
     private String game;
     private String version;
+    private String type;
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
     public String getGame() {
         return game;
@@ -22,8 +31,9 @@ public class RequestDownloadPacket extends Packet {
         this.version = version;
     }
 
-    public RequestDownloadPacket(String game, String version) {
+    public RequestDownloadPacket(String game, String version, String type) {
         this.game = game;
         this.version = version;
+        this.type = type;
     }
 }

@@ -36,10 +36,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     private static int height = 720;
     public static JList<String> gamesJList = new JList<>();
     public static JList<String> versionsJList = new JList<>();
+    public static JList<String> typesJList = new JList<>();
     public static JProgressBar progressBar = new JProgressBar();
     public static JSONObject games = new JSONObject();
     public static String[] gamesData = new String[0];
     public static String[] versionData = new String[0];
+    public static String[] typesData = new String[0];
     public static final ACK ack = new ACK(0);
     public static long bytesRecieved = 0;
     public static JLabel connectionStatus = new JLabel("Not connected");
@@ -52,6 +54,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     public static JButton launchSelected = new JButton("Launch");
     public static JScrollPane gameScrollPane = new JScrollPane(gamesJList);
     public static JScrollPane versionScrollPane = new JScrollPane(versionsJList);
+    public static JScrollPane typesScrollPane = new JScrollPane(typesJList);
     public static JButton uploadFile = new JButton("Upload new Version");
 
     public static void main(String[] args) throws Exception {
@@ -177,6 +180,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     gameDownloading = p.getGame();
                     filename = p.getFilename();
                     System.out.println("Filename: " + p.getFilename());
+                    System.out.println("FileType: " + p.getFileType());
                     bytes = 0;
                     System.out.println("Bytes: " + p.getBytes());
                     BYTES_PER_PACKET = p.getBytesPerPacket();
@@ -250,11 +254,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     System.out.println("Games Available");
                     System.out.println("---------------");
                     games = new JSONObject(p.getGamesJSON());
-                    //System.out.println(Util.prettyJSON(p.getGamesJSON()));
 
                     setGamesData();
 
                     if(gamesData.length > 0) setVersionData(gamesJList.getSelectedValue());
+
+                    if(versionData.length > 0) setTypesData(versionsJList.getSelectedValue());
 
                     System.out.println();
                 }
@@ -284,6 +289,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         panel.setBounds(0,0,width-16,height-39);
         pan.add(panel);
 
+
+
         titleLabel.setBounds(0,0,panel.getWidth(),50);
         fileServer.setBounds(925,50,panel.getWidth()-950,30);
         connectButton.setBounds(925,100,panel.getWidth()-950,30);
@@ -291,6 +298,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         refreshButton.setBounds(925,200,panel.getWidth()-950,30);
         downloadButton.setBounds(925,250,panel.getWidth()-950,30);
         uploadFile.setBounds(925,300,panel.getWidth()-950,30);
+        typesScrollPane.setBounds(925,350,panel.getWidth()-950,panel.getHeight()-470);
         gameScrollPane.setBounds(50,50,400,panel.getHeight()-100);
         versionScrollPane.setBounds(500,50,400,panel.getHeight()-100);
         progressBar.setBounds(50,panel.getHeight()-40,850,30);
@@ -311,22 +319,23 @@ public class Client extends me.redstoner2019.serverhandling.Client {
             public void actionPerformed(ActionEvent e) {
                 String game = gamesJList.getSelectedValue();
                 String version = versionsJList.getSelectedValue();
+                String type = typesJList.getSelectedValue();
 
-                if(version == null || game == null){
-                    JOptionPane.showMessageDialog(frame,"Invailid game or version");
+                if(version == null || game == null || type == null){
+                    JOptionPane.showMessageDialog(frame,"Invailid game, version or type");
                     return;
                 }
 
-                File jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_")+"/downloadinfo.json");
+                File jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_")+"/" + type +"/downloadinfo.json");
                 if(!jar.exists()){
-                    startDownload(game,version);
+                    startDownload(game,version,type);
                     if(!jar.exists()){
                         return;
                     }
                 }
                 try {
                     JSONObject gameData = new JSONObject(Util.readFile(jar));
-                    jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_") + "/" + gameData.getString("filename"));
+                    jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_")+"/" + type +"/" + gameData.getString("filename"));
                     if(jar.getName().endsWith(".jar")){
                         String[] commands = {"java -jar " + jar.getAbsolutePath()};
                         System.out.println(Arrays.toString(commands));
@@ -387,6 +396,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
                         String game = JOptionPane.showInputDialog("Game?");
                         String version = JOptionPane.showInputDialog("Version?");
+                        String type = JOptionPane.showInputDialog("Type? (client, server, ...)");
 
                         if(game == null || version == null) {
                             System.out.println("Cancelled");
@@ -407,7 +417,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
                             progressBar.setMaximum((int) packets);
 
-                            sendObject(new DownloadHeader(packets,fileSize,BYTES_PER_PACKET_SENDING,file.getName(),game,version));
+                            sendObject(new DownloadHeader(packets,fileSize,BYTES_PER_PACKET_SENDING,file.getName(),game,version,type));
 
                             System.out.println("File size " + Files.size(file.toPath()) + " bytes");
 
@@ -470,7 +480,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
             public void actionPerformed(ActionEvent e) {
                 if(gamesJList.getSelectedValue() != null && versionsJList.getSelectedValue() != null) {
                     refreshFiles();
-                    startDownload(gamesJList.getSelectedValue(),versionsJList.getSelectedValue());
+                    startDownload(gamesJList.getSelectedValue(),versionsJList.getSelectedValue(),typesJList.getSelectedValue());
                 }
                 else System.out.println("Nothing selected");
             }
@@ -485,14 +495,13 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         gamesJList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                System.out.println(gamesJList.getSelectedIndex() + " - " + gamesJList.getSelectedValue());
                 if(gamesJList.getSelectedValue() != null) setVersionData(gamesJList.getSelectedValue());
             }
         });
         versionsJList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-
+                if(versionsJList.getSelectedValue() != null) setTypesData(versionsJList.getSelectedValue());
             }
         });
         connectButton.addActionListener(new ActionListener() {
@@ -533,6 +542,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         panel.add(connectButton);
         panel.add(disconnectButton);
         panel.add(launchSelected);
+        panel.add(typesScrollPane);
 
         progressBar.setMinimum(0);
         progressBar.setMaximum(100);
@@ -546,10 +556,10 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
         sendObject(new RequestGamesPacket());
     }
-    public static void startDownload(String game, String version){
+    public static void startDownload(String game, String version, String type){
         if(!isConnected()) {return;}
 
-        sendObject(new RequestDownloadPacket(game,version));
+        sendObject(new RequestDownloadPacket(game,version,type));
     }
     public static void setGamesData(){
         int selectedIndex = gamesJList.getSelectedIndex();
@@ -585,6 +595,28 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
             if(versionData.length > 0){
                 versionsJList.setSelectedIndex(selectedIndex);
+            }
+        }
+    }
+    public static void setTypesData(String version){
+        if(versionData.length > 0){
+            int selectedIndex = typesJList.getSelectedIndex();
+
+            if(selectedIndex < 0) selectedIndex = 0;
+
+            typesData = new String[games.getJSONObject(gamesJList.getSelectedValue()).getJSONArray(version).length()];
+
+            int index = 0;
+            for(Object o : games.getJSONObject(gamesJList.getSelectedValue()).getJSONArray(version)){
+                String type = (String) o;
+                typesData[index] = type;
+                index++;
+            }
+
+            typesJList.setListData(typesData);
+
+            if(typesData.length > 0){
+                typesJList.setSelectedIndex(selectedIndex);
             }
         }
     }

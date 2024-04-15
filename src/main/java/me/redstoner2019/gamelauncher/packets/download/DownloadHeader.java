@@ -10,6 +10,23 @@ public class DownloadHeader extends Packet {
     private String game;
     private String version;
     private String json;
+    private String fileType;
+
+    public String getJson() {
+        return json;
+    }
+
+    public void setJson(String json) {
+        this.json = json;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
 
     public long getPackets() {
         return packets;
@@ -59,12 +76,13 @@ public class DownloadHeader extends Packet {
         this.version = version;
     }
 
-    public DownloadHeader(long packets, long bytes, int bytesPerPacket, String filename, String game, String version) {
+    public DownloadHeader(long packets, long bytes, int bytesPerPacket, String filename, String game, String version, String fileType) {
         this.packets = packets;
         this.bytes = bytes;
         this.bytesPerPacket = bytesPerPacket;
         this.filename = filename;
         this.game = game;
         this.version = version;
+        this.fileType = fileType;
     }
 }
