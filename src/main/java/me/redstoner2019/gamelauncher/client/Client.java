@@ -6,6 +6,9 @@ import me.redstoner2019.gamelauncher.packets.JSONRequest;
 import me.redstoner2019.gamelauncher.packets.RequestGamesPacket;
 import me.redstoner2019.gamelauncher.packets.VersionsPacket;
 import me.redstoner2019.gamelauncher.packets.download.*;
+import me.redstoner2019.gamelauncher.packets.server.ConsoleLine;
+import me.redstoner2019.gamelauncher.packets.server.StartConsolePacket;
+import me.redstoner2019.gamelauncher.packets.server.StartServerPacket;
 import me.redstoner2019.serverhandling.*;
 import org.json.JSONObject;
 
@@ -15,15 +18,11 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 public class Client extends me.redstoner2019.serverhandling.Client {
     public static String currentVersion = "1.1";
@@ -63,6 +62,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     public static JScrollPane versionScrollPane = new JScrollPane(versionsJList);
     public static JScrollPane typesScrollPane = new JScrollPane(typesJList);
     public static JButton uploadFile = new JButton("Upload new Version");
+    public static JButton startServer = new JButton("Start Server");
+    public static JLabel downloadInfo = new JLabel();
+    public static JSONObject gameInfoObject = new JSONObject();
 
     public static void main(String[] args) throws Exception {
         Thread gcThread = new Thread(new Runnable() {
@@ -116,6 +118,11 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         uploadFile.setEnabled(false);
         launchSelected.setEnabled(false);
 
+        searchForClientUpdates.setEnabled(false);
+        downloadClientUpdate.setEnabled(false);
+
+        startServer.setEnabled(false);
+
         setConnectionLostEvent(new ConnectionLostEvent() {
             @Override
             public void onConnectionLostEvent(String reason) {
@@ -133,6 +140,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
                 searchForClientUpdates.setEnabled(false);
                 downloadClientUpdate.setEnabled(false);
+                startServer.setEnabled(false);
             }
         });
         setConnectionFailedEvent(new ConnectionFailedEvent() {
@@ -152,6 +160,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
                 searchForClientUpdates.setEnabled(false);
                 downloadClientUpdate.setEnabled(false);
+
+                startServer.setEnabled(false);
             }
         });
         setOnConnectionSuccessEvent(new ConnectionSuccessEvent() {
@@ -171,6 +181,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
                 searchForClientUpdates.setEnabled(true);
                 downloadClientUpdate.setEnabled(false);
+
+                startServer.setEnabled(true);
             }
         });
 
@@ -188,6 +200,22 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     synchronized (ack){
                         ack.notify();
                     }
+                }
+                if(packet instanceof ConsoleLine p){
+                    ConsoleGUI.consoleArea.setText("\n" + p.getLine() + ConsoleGUI.consoleArea.getText());
+                }
+                if(packet instanceof StartConsolePacket p){
+                    Thread thread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            startServer.setEnabled(false);
+                            System.out.println("Start console");
+                            new ConsoleGUI();
+                            System.out.println("end console");
+                            startServer.setEnabled(true);
+                        }
+                    });
+                    thread.start();
                 }
                 if(packet instanceof DownloadHeader p){
                     data = new ArrayList<>();
@@ -239,17 +267,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                         }
                     }
                     if(gameDownloading.equals("odlauncher")){
-                        try {
-                            String jarPath = me.redstoner2019.serverhandling.Client.class
-                                    .getProtectionDomain()
-                                    .getCodeSource()
-                                    .getLocation()
-                                    .toURI()
-                                    .getPath();
-                            outputFile = new File(jarPath);
-                        } catch (URISyntaxException e) {
-                            throw new RuntimeException(e);
-                        }
+                        String jarPath = Main.jarPath;
+                        outputFile = new File(jarPath);
                     }
                     try {
                         FileOutputStream outputStream = new FileOutputStream(outputFile);
@@ -280,6 +299,14 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     if(gameDownloading.equals("odlauncher")){
                         clientUpdateLabel.setText("Update Successful. Please restart the launcher now.");
                         clientUpdateLabel.setForeground(Color.GREEN);
+                        try {
+                            Thread.sleep(1000);
+                            Main.restart();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
                 if(packet instanceof GamesPacket p){
@@ -289,6 +316,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     games = new JSONObject(p.getGamesJSON());
 
                     setGamesData();
+
+                    gameInfoObject = new JSONObject(p.getGamesJSON());
 
                     if(gamesData.length > 0) setVersionData(gamesJList.getSelectedValue());
 
@@ -342,8 +371,6 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         panel.setBounds(0,0,width-16,height-39);
         pan.add(panel);
 
-
-
         titleLabel.setBounds(0,0,panel.getWidth(),50);
         fileServer.setBounds(925,50,panel.getWidth()-950,30);
         connectButton.setBounds(925,100,panel.getWidth()-950,30);
@@ -354,10 +381,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         clientUpdateLabel.setBounds(925,450,panel.getWidth()-950,30);
         searchForClientUpdates.setBounds(925,500,panel.getWidth()-950,30);
         downloadClientUpdate.setBounds(925,550,panel.getWidth()-950,30);
+        startServer.setBounds(925,400,panel.getWidth()-950,30);
 
-        gameScrollPane.setBounds(50,50,425,panel.getHeight()-100);
-        versionScrollPane.setBounds(500,50,400,325);
-        typesScrollPane.setBounds(500,400,400,panel.getHeight()-450);
+        gameScrollPane.setBounds(50,50,425,300);
+        versionScrollPane.setBounds(50,370,425,panel.getHeight()-50-370);
+        typesScrollPane.setBounds(500,50,400,80);
+        downloadInfo.setBounds(500,150,425,panel.getHeight()-150-50);
 
         progressBar.setBounds(50,panel.getHeight()-40,850,30);
         connectionStatus.setBounds(900,10,panel.getWidth()-900,30);
@@ -371,6 +400,13 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         connectionStatus.setForeground(Color.RED);
 
         titleLabel.setFont(new Font(titleLabel.getFont().getFontName(),Font.PLAIN,30));
+
+        startServer.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendObject(new StartServerPacket(gamesJList.getSelectedValue(),versionsJList.getSelectedValue()));
+            }
+        });
 
         searchForClientUpdates.addActionListener(new ActionListener() {
             @Override
@@ -579,6 +615,28 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 if(versionsJList.getSelectedValue() != null) setTypesData(versionsJList.getSelectedValue());
             }
         });
+        typesJList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if(typesJList.getSelectedValue() == null) return;
+                if(gameInfoObject.has(gamesJList.getSelectedValue())){
+                    if(gameInfoObject.getJSONObject(gamesJList.getSelectedValue()).has(versionsJList.getSelectedValue())){
+                        JSONObject da = gameInfoObject.getJSONObject(gamesJList.getSelectedValue()).getJSONObject("full-data").getJSONObject(versionsJList.getSelectedValue());
+                        if(da.has(typesJList.getSelectedValue())){
+                            String gamename = gamesJList.getSelectedValue();
+                            double fileSizeInMB = ((double) da.getJSONObject(typesJList.getSelectedValue()).getLong("size")) / 1024.0 / 1024.0;
+                            String changes = da.getJSONObject(typesJList.getSelectedValue()).getString("changes").replaceAll("\n","<br>");
+                            String titles = da.getJSONObject(typesJList.getSelectedValue()).getString("title");
+
+                            String html = "<html><u>" + gamename + "</u><br>File Size: " + String.format("%.2f",fileSizeInMB) + " MB " + "<br>Changes: " + changes.replaceAll("\n","<br>") + "<br>Title: " + titles;
+                            downloadInfo.setText(html);
+                            downloadInfo.setVerticalAlignment(SwingConstants.TOP);
+                            downloadInfo.setFont(new Font("Arial",Font.PLAIN,25));
+                        }
+                    }
+                }
+            }
+        });
         connectButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -596,6 +654,11 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     connect(fileServer.getText(),8007);
                 }
                 refreshFiles();
+
+                JSONObject object = new JSONObject();
+                object.put("header","request");
+                object.put("data","client-update");
+                sendObject(new JSONRequest(object.toString()));
             }
         });
         disconnectButton.addActionListener(new ActionListener() {
@@ -621,6 +684,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         panel.add(clientUpdateLabel);
         panel.add(searchForClientUpdates);
         panel.add(downloadClientUpdate);
+        panel.add(startServer);
+        panel.add(downloadInfo);
 
         progressBar.setMinimum(0);
         progressBar.setMaximum(100);
@@ -640,6 +705,10 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         sendObject(new RequestDownloadPacket(game,version,type));
     }
     public static void setGamesData(){
+        gamesJList.setFont(new Font("Arial",Font.PLAIN,20));
+        typesJList.setFont(new Font("Arial",Font.PLAIN,20));
+        versionsJList.setFont(new Font("Arial",Font.PLAIN,20));
+
         int selectedIndex = gamesJList.getSelectedIndex();
 
         if(selectedIndex < 0) selectedIndex = 0;

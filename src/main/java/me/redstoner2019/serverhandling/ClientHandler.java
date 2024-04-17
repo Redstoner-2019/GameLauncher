@@ -57,7 +57,7 @@ public class ClientHandler {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true){
+                while (isConnected()){
                     if(!isConnected() || socket.isClosed()) {
                         toSend.clear();
                         break;
@@ -90,14 +90,12 @@ public class ClientHandler {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                boolean run = true;
-                while (run){
+                while (isConnected()){
                     Object o = null;
                     if(socket.isClosed()){
                         Server.getClients().remove(this);
                         Util.log("Client disconnected"); //8008135
                         connected = false;
-                        run = false;
                         break;
                     }
                     try {

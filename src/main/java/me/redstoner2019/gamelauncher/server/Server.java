@@ -1,9 +1,6 @@
 package me.redstoner2019.gamelauncher.server;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -17,6 +14,9 @@ import me.redstoner2019.gamelauncher.packets.GamesPacket;
 import me.redstoner2019.gamelauncher.packets.JSONRequest;
 import me.redstoner2019.gamelauncher.packets.RequestGamesPacket;
 import me.redstoner2019.gamelauncher.packets.download.*;
+import me.redstoner2019.gamelauncher.packets.server.ConsoleLine;
+import me.redstoner2019.gamelauncher.packets.server.StartConsolePacket;
+import me.redstoner2019.gamelauncher.packets.server.StartServerPacket;
 import me.redstoner2019.serverhandling.ClientConnectEvent;
 import me.redstoner2019.serverhandling.ClientHandler;
 import me.redstoner2019.serverhandling.PacketListener;
@@ -36,6 +36,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
     public static String recieve_FILE_TYPE = "";
     public static Configuration configuration;
     public static File gameLocationsFile = new File("data/config/locations.json");
+    public static HashMap<String, List<ClientHandler>> gameConsoleID = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         File serverProperties = new File("server.properties");
@@ -76,6 +77,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
             public void connectEvent(ClientHandler handler) throws Exception {
                 handler.startPacketSender();
                 final ACK ack = new ACK(0);
+
                 handler.startPacketListener(new PacketListener() {
                     @Override
                     public void packetRecievedEvent(Object packet) {
@@ -83,6 +85,29 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                             ack.setSum(1);
                             synchronized (ack){
                                 ack.notify();
+                            }
+                        }
+
+                        if(packet instanceof StartServerPacket p){
+                            String id = p.getGame() + " - " + p.getVersion();
+                            if(gameConsoleID.get(id) == null){
+                                startServer(p.getGame(),p.getVersion(),handler);
+                                for(String s : gameConsoleID.keySet()){
+                                    if(gameConsoleID.get(s).contains(handler)){
+                                        gameConsoleID.get(s).remove(handler);
+                                        break;
+                                    }
+                                }
+                                gameConsoleID.get(id).add(handler);
+                            } else {
+                                handler.sendObject(new StartConsolePacket());
+                                for(String s : gameConsoleID.keySet()){
+                                    if(gameConsoleID.get(s).contains(handler)){
+                                        gameConsoleID.get(s).remove(handler);
+                                        break;
+                                    }
+                                }
+                                gameConsoleID.get(id).add(handler);
                             }
                         }
 
@@ -94,7 +119,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                             recieve_gameDownloading = p.getGame().toLowerCase();
                             recieve_versionDownloaded = p.getVersion();
                             recieve_BYTES_PER_PACKET = p.getBytesPerPacket();
-                            recieve_FILE_TYPE = p.getFileType();
+                            recieve_FILE_TYPE = p.getFileType().toLowerCase();
                             System.out.println("Requested " + recieve_gameDownloading + " " + recieve_versionDownloaded + " " + recieve_FILE_TYPE);
                             if(!configuration.hasGame(recieve_gameDownloading)){
                                 configuration.addGame(new Game(recieve_gameDownloading));
@@ -158,8 +183,12 @@ public class Server extends me.redstoner2019.serverhandling.Server {
 
                             String gameFile = type.file;
                             File file = new File(gameFile);
+                            boolean update = recieve_gameDownloading.equals("odlauncher") && type.name.equals("server");
+                            File serverFile = new File(Main.jarPath);
                             try {
                                 FileOutputStream outputStream = new FileOutputStream(file);
+                                FileOutputStream serverOutputStream = null;
+                                if(update) serverOutputStream = new FileOutputStream(serverFile);
                                 long bytesWritten = 0;
                                 long previousID = -1;
                                 recieve_data.sort(new Comparator<DataPacket>() {
@@ -168,34 +197,22 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                         return o1.getId()-o2.getId();
                                     }
                                 });
+
                                 for(DataPacket pa : recieve_data){
-                                    long checksum = 0;
-                                    for(byte b : pa.getData()){
-                                        checksum+=b;
-                                    }
-                                    if(checksum!=pa.getSum()) {
-                                        System.out.println("Checksum error!");
-                                        System.out.println("Packet Checksum: " + pa.getSum());
-                                        System.out.println("Data Checksum: " + pa.getSum());
-                                        return;
-                                    }
-                                    if(pa.getData().length != recieve_BYTES_PER_PACKET) {
-                                        System.out.println("Invalid size");
-                                        System.out.println("Size: " + pa.getData().length);
-                                    }
-                                    if(pa.getId()-1 != previousID){
-                                        System.out.println("Order error");
-                                        System.out.println("Prev: " + previousID);
-                                        System.out.println("ID: " + pa.getId());
-                                    }
-                                    previousID = pa.getId();
                                     outputStream.write(pa.getData());
+                                    if(update) serverOutputStream.write(pa.getData());
                                     bytesWritten+=pa.getData().length;
                                 }
                                 recieve_data.clear();
                                 outputStream.close();
+                                if(update) System.out.println("Updated");
+                                if(update) serverOutputStream.close();
                                 System.out.println("Complete");
                                 configuration.save();
+                                if(update) {
+                                    System.out.println("Restarting");
+                                    Main.restart("screen ");
+                                }
                             } catch (Exception e) {
                                 System.out.println("An error occured");
                                 e.printStackTrace();
@@ -211,11 +228,12 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                         case "client-update" : {
                                             JSONObject data = new JSONObject();
                                             data.put("header","update-response");
-                                            data.put("data",configuration.getGame("odlauncher").versions.get(0).name);
-                                            System.out.println(object);
-                                            System.out.println("------------------");
-                                            System.out.println(data);
-                                            handler.sendObject(new JSONRequest(data.toString()));
+                                            if(configuration.hasGame("odlauncher")){
+                                                data.put("data",configuration.getGame("odlauncher").versions.get(configuration.getGame("odlauncher").versions.size()-1).name);
+                                                handler.sendObject(new JSONRequest(data.toString()));
+                                            } else {
+                                                handler.sendObject(new DownloadUnavailablePacket("Updates not yet setup on the Server"));
+                                            }
                                             break;
                                         }
                                     }
@@ -229,6 +247,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                             JSONObject games = new JSONObject();
 
                             for(Game game : configuration.games){
+                                if(game.name.equals("odlauncher")) continue;
                                 JSONArray versions = new JSONArray();
                                 JSONObject gameO = new JSONObject();
                                 for(Version v : game.versions){
@@ -240,9 +259,19 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                     versions.put(v.name);
                                 }
                                 gameO.put("versions",versions);
+                                gameO.put("full-data",new JSONObject(configuration.toString()).getJSONObject(game.name));
                                 games.put(game.name,gameO);
-                            }
+                                /*JSONObject sizeVersionJSON = new JSONObject();
+                                for(Version v : game.versions){
+                                    JSONObject sizeJSON = new JSONObject();
+                                    for(Type t : v.types){
+                                        sizeJSON.put(t.name,t.size);
+                                    }
+                                    sizeVersionJSON.put(v.name,sizeJSON);
+                                }
+                                gameO.put("sizes",sizeVersionJSON);*/
 
+                            }
                             handler.sendObject(new GamesPacket(games.toString()));
                         }
 
@@ -399,5 +428,51 @@ public class Server extends me.redstoner2019.serverhandling.Server {
 
         setup(PORT);
         start();
+    }
+    public static void startServer(String game, String version, ClientHandler handler){
+        if(gameConsoleID.get(game + " - " + version) == null){
+            System.out.println("game " + game);
+            System.out.println("version " + version);
+            if(!configuration.getGame(game).getVersion(version).hasType("server")){
+                handler.sendObject(new DownloadUnavailablePacket("This program does not have a server!"));
+                return;
+            }
+            File file = new File(configuration.getGame(game).getVersion(version).getType("server").file);
+            try {
+                Process process = Runtime.getRuntime().exec("java -jar " + file.getAbsolutePath(),null, file.getParentFile());
+                gameConsoleID.put(game + " - " + version,new ArrayList<>());
+                handler.sendObject(new StartConsolePacket());
+                Thread consoleThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        Scanner inputStream = new Scanner(process.getInputStream());
+                        while (process.isAlive()){
+                            try{
+                                String line = inputStream.nextLine();
+                                for(ClientHandler h : gameConsoleID.get(game + " - " + version)){
+                                    h.sendObject(new ConsoleLine(line));
+                                }
+                            } catch (Exception e){
+                                for(ClientHandler h : gameConsoleID.get(game + " - " + version)){
+                                    h.sendObject(new ConsoleLine("Process finished with exit code " + process.exitValue()));
+                                }
+                                break;
+                            }
+                        }
+                    }
+                });
+                consoleThread.start();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            handler.sendObject(new DownloadUnavailablePacket("Server already running"));
+        }
+        System.out.println("Start complete");
     }
 }
