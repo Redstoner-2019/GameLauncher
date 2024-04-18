@@ -20,12 +20,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
 
 public class Client extends me.redstoner2019.serverhandling.Client {
-    public static String currentVersion = "1.1";
+    public static String currentVersion = "v1.0.0";
     public static String updateVersion = "";
     public static List<DataPacket> data = new ArrayList<>();
     public static String filename = "";
@@ -65,6 +64,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     public static JButton startServer = new JButton("Start Server");
     public static JLabel downloadInfo = new JLabel();
     public static JSONObject gameInfoObject = new JSONObject();
+    public static JFileChooser chooser = new JFileChooser();
 
     public static void main(String[] args) throws Exception {
         Thread gcThread = new Thread(new Runnable() {
@@ -401,6 +401,10 @@ public class Client extends me.redstoner2019.serverhandling.Client {
 
         titleLabel.setFont(new Font(titleLabel.getFont().getFontName(),Font.PLAIN,30));
 
+        gamesJList.setListData(new String[]{"Nothing to Display!"});
+        versionsJList.setListData(new String[]{"Nothing to Display!"});
+        typesJList.setListData(new String[]{"Nothing to Display!"});
+
         startServer.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -500,7 +504,6 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     @Override
                     public void run() {
                         progressBar.setValue(0);
-                        JFileChooser chooser = new JFileChooser("C:\\Users\\andre\\Downloads\\uploadtest");
                         chooser.showOpenDialog(frame);
 
                         File file = chooser.getSelectedFile();
@@ -509,10 +512,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                         String version = JOptionPane.showInputDialog("Version?");
                         String type = JOptionPane.showInputDialog("Type? (client, server, ...)");
 
-                        if(game == null || version == null) {
+                        if(game == null || version == null || type == null) {
                             System.out.println("Cancelled");
                             return;
                         }
+
+                        if(!version.startsWith("v")) version = "v" + version;
 
                         if(!file.exists()){
                             System.out.println("File not found");
@@ -606,32 +611,47 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         gamesJList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
+                if(gamesData.length == 0){
+                    gamesJList.setListData(new String[]{"Nothing to Display!"});
+                    gamesJList.clearSelection();
+                    return;
+                }
                 if(gamesJList.getSelectedValue() != null) setVersionData(gamesJList.getSelectedValue());
             }
         });
         versionsJList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
+                if(versionData.length == 0){
+                    versionsJList.setListData(new String[]{"Nothing to Display!"});
+                    versionsJList.clearSelection();
+                    return;
+                }
                 if(versionsJList.getSelectedValue() != null) setTypesData(versionsJList.getSelectedValue());
             }
         });
         typesJList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
+                if(typesData.length == 0){
+                    typesJList.setListData(new String[]{"Nothing to Display!"});
+                    typesJList.clearSelection();
+                    return;
+                }
                 if(typesJList.getSelectedValue() == null) return;
                 if(gameInfoObject.has(gamesJList.getSelectedValue())){
                     if(gameInfoObject.getJSONObject(gamesJList.getSelectedValue()).has(versionsJList.getSelectedValue())){
                         JSONObject da = gameInfoObject.getJSONObject(gamesJList.getSelectedValue()).getJSONObject("full-data").getJSONObject(versionsJList.getSelectedValue());
                         if(da.has(typesJList.getSelectedValue())){
+                            String titles = da.getJSONObject(typesJList.getSelectedValue()).getString("title");
                             String gamename = gamesJList.getSelectedValue();
                             double fileSizeInMB = ((double) da.getJSONObject(typesJList.getSelectedValue()).getLong("size")) / 1024.0 / 1024.0;
                             String changes = da.getJSONObject(typesJList.getSelectedValue()).getString("changes").replaceAll("\n","<br>");
-                            String titles = da.getJSONObject(typesJList.getSelectedValue()).getString("title");
 
-                            String html = "<html><u>" + gamename + "</u><br>File Size: " + String.format("%.2f",fileSizeInMB) + " MB " + "<br>Changes: " + changes.replaceAll("\n","<br>") + "<br>Title: " + titles;
+                            String html = "<html><u><h1 style=\"font-size:20px\";text-decoration: underline;>" + gamename + " - " + titles + "</h1></u><h2 style=\"font-size:15px\">File Size: " + String.format("%.2f",fileSizeInMB) + " MB " + "<br><br>Changes: <br>" + changes.replaceAll("\n","<br>") + "</h2></html>";
                             downloadInfo.setText(html);
                             downloadInfo.setVerticalAlignment(SwingConstants.TOP);
-                            downloadInfo.setFont(new Font("Arial",Font.PLAIN,25));
+                            //downloadInfo.setFont(new Font("Arial",Font.PLAIN,25));
                         }
                     }
                 }
@@ -714,8 +734,11 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         if(selectedIndex < 0) selectedIndex = 0;
 
         gamesData = new String[games.length()];
+
+        if(games.has("odlauncher")) gamesData = new String[games.length()-1];
         int index = 0;
         for(String s : games.keySet()){
+            if(s.equals("odlauncher")) continue;
             gamesData[index] = s;
             index++;
         }
@@ -738,11 +761,16 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 index++;
             }
 
+            Arrays.sort(versionData, Collections.reverseOrder());
+
             versionsJList.setListData(versionData);
 
             if(versionData.length > 0){
                 versionsJList.setSelectedIndex(selectedIndex);
             }
+        } else {
+            versionsJList.setListData(new String[]{"Nothing to Display!"});
+            versionsJList.clearSelection();
         }
     }
     public static void setTypesData(String version){
@@ -750,6 +778,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
             int selectedIndex = typesJList.getSelectedIndex();
 
             if(selectedIndex < 0) selectedIndex = 0;
+
+            if(gamesJList.getSelectedValue() == null) return;
 
             typesData = new String[games.getJSONObject(gamesJList.getSelectedValue()).getJSONArray(version).length()];
 

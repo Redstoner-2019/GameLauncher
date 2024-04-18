@@ -6,6 +6,7 @@ import me.redstoner2019.configuration.Type;
 import me.redstoner2019.configuration.Version;
 import me.redstoner2019.gamelauncher.client.Client;
 import me.redstoner2019.gamelauncher.server.Server;
+import me.redstoner2019.serverhandling.ClientHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,8 +47,31 @@ public class Main {
         Client.main(args);
     }
     public static void restart(String prefix) throws IOException {
-        Process process = Runtime.getRuntime().exec("java -jar " + prefix + jarPath.substring(1));
-        System.exit(0);
+        if(true) return;
+        System.out.println("Closing socket");
+        //Server.serverSocket.close();
+        System.out.println("Starting new Server");
+        prefix = "";
+        Process process = Runtime.getRuntime().exec(prefix + "screen java -jar " + jarPath.substring(1));
+        System.out.println("New Server Started");
+
+        try{
+            int i = 0;
+            while (true){
+                Scanner scanner = new Scanner(process.getInputStream());
+                System.out.println("NEW: " + scanner.nextLine());
+                i++;
+                if(i == 3) break;
+            }
+            for(ClientHandler h : Server.getClients()) h.disconnect();
+            while (true){}
+            //System.exit(0);
+        }catch (Exception e){
+            e.printStackTrace();
+            for(ClientHandler h : Server.getClients()) h.disconnect();
+            //System.exit(0);
+        }
+        //System.exit(0);
     }
 
     public static void restart() throws IOException {

@@ -69,7 +69,7 @@ public class Configuration {
                         typeO.file = typeObject.getString("file");
                         typeO.size = typeObject.getLong("size");
                         typeO.changes = typeObject.getString("changes");
-                        typeO.title = typeObject.getString("changes");
+                        typeO.title = typeObject.getString("title");
                     }
                 }
             }

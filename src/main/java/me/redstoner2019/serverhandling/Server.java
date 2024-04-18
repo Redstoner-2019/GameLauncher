@@ -18,6 +18,7 @@ public class Server {
     public static java.util.List<ClientHandler> getClients() {
         return clients;
     }
+    public static ServerSocket serverSocket;
 
     public static void setup(int port){
         PORT = port;
@@ -28,14 +29,13 @@ public class Server {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        ServerSocket serverSocket;
         try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
             Util.log("Couldn't start Server");
             return;
         }
-        while (serverSocket.isBound()){
+        while (!serverSocket.isClosed()){
             Util.log("Waiting for connection...");
             try{
                 final Socket socket = serverSocket.accept();
