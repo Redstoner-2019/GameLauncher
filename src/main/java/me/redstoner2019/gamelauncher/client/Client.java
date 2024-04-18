@@ -12,6 +12,7 @@ import me.redstoner2019.gamelauncher.packets.server.StartServerPacket;
 import me.redstoner2019.serverhandling.*;
 import org.json.JSONObject;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -141,6 +142,10 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 searchForClientUpdates.setEnabled(false);
                 downloadClientUpdate.setEnabled(false);
                 startServer.setEnabled(false);
+
+                gamesData = new String[0];
+                versionData = new String[0];
+                typesData = new String[0];
             }
         });
         setConnectionFailedEvent(new ConnectionFailedEvent() {
@@ -162,6 +167,10 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 downloadClientUpdate.setEnabled(false);
 
                 startServer.setEnabled(false);
+
+                gamesData = new String[0];
+                versionData = new String[0];
+                typesData = new String[0];
             }
         });
         setOnConnectionSuccessEvent(new ConnectionSuccessEvent() {
@@ -362,6 +371,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         frame.setBounds(0, 0, width, height);
         frame.setTitle("OD Launcher");
         frame.setLocationRelativeTo(null);
+
+        try {
+            frame.setIconImage(ImageIO.read(Client.class.getResource("/textures/icon.png")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         JPanel pan = new JPanel();
         frame.getContentPane().add(pan, BorderLayout.CENTER);

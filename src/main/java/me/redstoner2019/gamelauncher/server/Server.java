@@ -2,7 +2,6 @@ package me.redstoner2019.gamelauncher.server;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 import me.redstoner2019.Main;
@@ -75,6 +74,8 @@ public class Server extends me.redstoner2019.serverhandling.Server {
         setClientConnectEvent(new ClientConnectEvent() {
             @Override
             public void connectEvent(ClientHandler handler) throws Exception {
+
+
                 handler.startPacketSender();
                 final ACK ack = new ACK(0);
 
@@ -193,13 +194,10 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                 if(update) serverOutputStream = new FileOutputStream(serverFile);
                                 long bytesWritten = 0;
                                 long previousID = -1;
-                                System.out.println("Sorting");
 
-                                System.out.println("Starting loop");
                                 int ind = 0;
                                 for(DataPacket pa : recieve_data){
                                     ind++;
-                                    System.out.println(ind);
                                     outputStream.write(pa.getData());
                                     if(update) serverOutputStream.write(pa.getData());
                                     bytesWritten+=pa.getData().length;
