@@ -66,6 +66,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
     public static JLabel downloadInfo = new JLabel();
     public static JSONObject gameInfoObject = new JSONObject();
     public static JFileChooser chooser = new JFileChooser();
+    public static String gui = "main-menu";
 
     public static void main(String[] args) throws Exception {
         Thread gcThread = new Thread(new Runnable() {
@@ -423,7 +424,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         startServer.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sendObject(new StartServerPacket(gamesJList.getSelectedValue(),versionsJList.getSelectedValue()));
+                //sendObject(new StartServerPacket(gamesJList.getSelectedValue(),versionsJList.getSelectedValue()));
+                if(gui.equals("main-menu")) {
+                    gui = "server-manager";
+                } else {
+                    gui = "main-menu";
+                }
             }
         });
 
@@ -735,7 +741,45 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         progressBar.setValue(0);
         progressBar.setStringPainted(true);
 
+        JLabel panelManagement = new JLabel();
+        panelManagement.setBounds(panel.getBounds());
+        pan.add(panelManagement);
+
+        JButton backToMainGui = new JButton("Back");
+        backToMainGui.setBounds(20,20,200,40);
+        panelManagement.add(backToMainGui);
+        backToMainGui.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(gui.equals("main-menu")) {
+                    gui = "server-manager";
+                } else {
+                    gui = "main-menu";
+                }
+            }
+        });
+
         frame.setVisible(true);
+
+        while (frame.isVisible()){
+            try {
+                Thread.sleep(0);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            switch (gui){
+                case "main-menu": {
+                    panel.setVisible(true);
+                    panelManagement.setVisible(false);
+                    break;
+                }
+                case "server-manager" :{
+                    panel.setVisible(false);
+                    panelManagement.setVisible(true);
+                    break;
+                }
+            }
+        }
     }
     public static void refreshFiles(){
         if(!isConnected()) {return;}
