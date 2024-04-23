@@ -303,7 +303,7 @@ public class Server extends me.redstoner2019.serverhandling.Server {
                                                 PACKET_SIZE = (int) Math.max((double)size/500.0,Main.DEFAULT_SIZE);
 
                                                 long packets = (long) Math.ceil((double) size /PACKET_SIZE);
-                                                handler.sendObject(new DownloadHeader(packets,size,PACKET_SIZE,gameFile,p.getGame(),p.getVersion(),p.getType()));
+                                                handler.sendObject(new DownloadHeader(packets,size,PACKET_SIZE,game.name + "/" + type.name + "/" + new File(type.file).getName(),p.getGame(),p.getVersion(),p.getType()));
 
                                                 int index = 0;
 

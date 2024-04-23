@@ -266,7 +266,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 if(packet instanceof DownloadEndPacket){
                     System.out.println("Writing packets");
                     File out = new File("ClientGames/" + filename);
-                    File outputFile = new File(out.getParent().replaceAll("\\.","_") + "/" + out.getName());
+                    File outputFile = new File("ClientGames/" + filename);
                     if(!outputFile.exists()){
                         outputFile.getParentFile().mkdirs();
                         try {
@@ -456,7 +456,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     return;
                 }
 
-                File jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_")+"/" + type +"/downloadinfo.json");
+                File jar = new File("ClientGames/"+game+"/"+ type +"/downloadinfo.json");
                 if(!jar.exists()){
                     startDownload(game,version,type);
                     if(!jar.exists()){
@@ -465,11 +465,13 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 }
                 try {
                     JSONObject gameData = new JSONObject(Util.readFile(jar));
-                    jar = new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_")+"/" + type +"/" + gameData.getString("filename"));
+                    jar = new File("ClientGames/"+game+"/"+ type +"/"+ gameData.getString("filename"));
+                    System.out.println("Launching " + jar.getAbsolutePath());
                     if(jar.getName().endsWith(".jar")){
                         String[] commands = {"java -jar " + jar.getAbsolutePath()};
                         System.out.println(Arrays.toString(commands));
                         File finalJar = jar;
+                        File finalJar1 = jar;
                         Thread gameThread = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -485,8 +487,9 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                                     Process process = Runtime.getRuntime().exec(commands[0],null, finalJar.getParentFile());
 
                                     process.waitFor();
-                                    new File("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_") + "/logs/").mkdirs();
-                                    FileOutputStream outputStream = new FileOutputStream("ClientGames/data/games/"+game+"/"+version.replaceAll("\\.","_") + "/logs/dump.log");
+                                    File newFile = new File(finalJar1.getParentFile().getAbsolutePath() + "/logs/");
+                                    newFile.mkdirs();
+                                    FileOutputStream outputStream = new FileOutputStream(newFile.getAbsolutePath()+"/dump.log");
 
                                     outputStream.write(process.getErrorStream().readAllBytes());
                                     outputStream.write('\n');
@@ -609,9 +612,14 @@ public class Client extends me.redstoner2019.serverhandling.Client {
         downloadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                System.out.println(gamesJList.getSelectedValue());
+                System.out.println(versionsJList.getSelectedValue());
                 if(gamesJList.getSelectedValue() != null && versionsJList.getSelectedValue() != null) {
+                    System.out.println("Refreshing files");
                     refreshFiles();
+                    System.out.println("Refreshed files");
                     startDownload(gamesJList.getSelectedValue(),versionsJList.getSelectedValue(),typesJList.getSelectedValue());
+                    System.out.println("Started download");
                 }
                 else System.out.println("Nothing selected");
             }

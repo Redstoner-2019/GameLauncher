@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Version {
     public String name;
+    public boolean isAlpha = false;
     public List<Type> types = new ArrayList<>();
 
     public void addType(Type type) {
@@ -21,5 +22,9 @@ public class Version {
 
     public Version(String name) {
         this.name = name;
+    }
+    public Version(String name, boolean alpha) {
+        this.name = name;
+        this.isAlpha = alpha;
     }
 }

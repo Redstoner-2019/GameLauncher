@@ -42,6 +42,7 @@ public class Configuration {
                     typeObject.put("title",type.title);
 
                     versionObject.put(type.name,typeObject);
+                    versionObject.put("alpha",version.isAlpha);
                     gameObject.put(version.name,versionObject);
                     config.put(game.name,gameObject);
                 }
@@ -61,6 +62,7 @@ public class Configuration {
                 for(String version : gameObject.keySet()){
                     JSONObject versionObject = gameObject.getJSONObject(version);
                     Version versionO = new Version(version);
+                    if(versionObject.has("alpha")) versionO.isAlpha = versionObject.getBoolean("alpha");
                     gameO.addVersion(versionO);
                     for(String type : versionObject.keySet()){
                         JSONObject typeObject = versionObject.getJSONObject(type);
@@ -76,7 +78,6 @@ public class Configuration {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
     public void save(){
         try {

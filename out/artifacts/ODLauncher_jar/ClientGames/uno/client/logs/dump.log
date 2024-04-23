@@ -1,0 +1,17 @@
+23 Apr 2024 09:25:35 GMT [ERROR] Couldnt connect, socket exception!
+23 Apr 2024 09:25:41 GMT [ERROR] Couldnt connect, socket exception!
+
+
+
+
+23 Apr 2024 09:19:38 GMT [INFO]  Init complete
+23 Apr 2024 09:19:38 GMT [INFO]  jar:file:/C:/Users/l.paepke/Downloads/GameLauncher/out/artifacts/ODLauncher_jar/ClientGames/uno/client/UNO_CLIENT.jar!/textures/texture.png
+23 Apr 2024 09:19:39 GMT [INFO]  Loading texture
+23 Apr 2024 09:19:39 GMT [INFO]  Loaded texture
+23 Apr 2024 09:19:39 GMT [INFO]  Textures loaded
+23 Apr 2024 09:19:40 GMT [INFO]  Started sender
+23 Apr 2024 09:25:35 GMT [INFO]  Connection refused: connect
+23 Apr 2024 09:25:41 GMT [INFO]  Connection refused: connect
+23 Apr 2024 09:33:33 GMT [INFO]  Game end
+23 Apr 2024 09:35:20 GMT [INFO]  Game end
+23 Apr 2024 09:37:38 GMT [INFO]  Game end
