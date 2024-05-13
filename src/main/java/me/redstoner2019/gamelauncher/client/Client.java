@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.List;
 
 public class Client extends me.redstoner2019.serverhandling.Client {
-    public static String currentVersion = "v1.0.0";
+    public static String currentVersion = "v1.2.0";
     public static String updateVersion = "";
     public static List<DataPacket> data = new ArrayList<>();
     public static String filename = "";
@@ -266,8 +266,8 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 }
                 if(packet instanceof DownloadEndPacket){
                     System.out.println("Writing packets");
-                    File out = new File("ClientGames/" + filename);
                     File outputFile = new File("ClientGames/" + filename);
+                    Util.log("Saving to " + outputFile);
                     if(!outputFile.exists()){
                         outputFile.getParentFile().mkdirs();
                         try {
@@ -462,7 +462,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                     return;
                 }
 
-                File jar = new File("ClientGames/"+game+"/"+ type +"/downloadinfo.json");
+                File jar = new File("ClientGames/data/games/"+game+ "/" + version + "/"+ type +"/downloadinfo.json");
                 if(!jar.exists()){
                     startDownload(game,version,type);
                     if(!jar.exists()){
@@ -471,13 +471,12 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                 }
                 try {
                     JSONObject gameData = new JSONObject(Util.readFile(jar));
-                    jar = new File("ClientGames/"+game+"/"+ type +"/"+ gameData.getString("filename"));
+                    jar = new File("ClientGames/data/games/"+game+"/"+version + "/" + type +"/"+ gameData.getString("filename"));
                     System.out.println("Launching " + jar.getAbsolutePath());
                     if(jar.getName().endsWith(".jar")){
                         String[] commands = {"java -jar " + jar.getAbsolutePath()};
                         System.out.println(Arrays.toString(commands));
                         File finalJar = jar;
-                        File finalJar1 = jar;
                         Thread gameThread = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -493,7 +492,7 @@ public class Client extends me.redstoner2019.serverhandling.Client {
                                     Process process = Runtime.getRuntime().exec(commands[0],null, finalJar.getParentFile());
 
                                     process.waitFor();
-                                    File newFile = new File(finalJar1.getParentFile().getAbsolutePath() + "/logs/");
+                                    File newFile = new File(finalJar.getParentFile().getAbsolutePath() + "/logs/");
                                     newFile.mkdirs();
                                     FileOutputStream outputStream = new FileOutputStream(newFile.getAbsolutePath()+"/dump.log");
 

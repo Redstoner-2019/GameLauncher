@@ -1,0 +1,45 @@
+
+
+
+
+0 -> took 211 ms
+jar:file:/C:/Users/l.paepke/Downloads/projects/GameLauncher/out/artifacts/ODLauncher/ClientGames/data/games/uno/v1.6.0-alpha.13/client/UNO_CLIENT.jar!/textures/texture.png
+45.93.249.98
+[14:06:08.792]: Starting sender
+[14:06:08.938]: Reply recieved
+Loading texture
+Loaded texture
+1 -> took 827 ms
+Textures loaded
+[14:06:09.217]: Reply recieved
+2 -> took 65 ms
+3 -> took 5 ms
+[14:06:09.234]: not logged in
+4 -> took 17 ms
+5 -> took 84 ms
+6 -> took 57 ms
+7 -> took 19 ms
+8 -> took 36 ms
+9 -> took 294 ms
+10 -> took 2 ms
+11 -> took 52 ms
+12 -> took 37 ms
+13 -> took 0 ms
+[14:06:09.823]: Starting sender
+14 -> took 145 ms
+[14:06:26.239]: Login reply sent
+[14:06:26.270]: Reply recieved
+[14:06:26.272]: token data {"header":"login-incomplete","info":"JSONObject[\"password\"] not found."}
+[14:06:26.274]: not logged in
+[14:06:29.398]: Login reply sent
+[14:06:29.424]: Reply recieved
+[14:06:29.426]: token data {"header":"login-incomplete","info":"JSONObject[\"password\"] not found."}
+[14:06:29.428]: not logged in
+[14:06:39.881]: Starting Account Creation
+[14:06:39.905]: Sending Account Creation
+[14:06:39.925]: Reply recieved
+[14:06:39.926]: Returning Account Creation
+[14:06:50.763]: Login reply sent
+[14:06:50.948]: Reply recieved
+[14:06:50.949]: token data {"header":"login-complete","token":"ZD2cjIdiKpBNIjpsHb8lA2DYLHzGrfPCC+t4oB9fzSVxN1I96Q3tCVZkTToKr7n4PHpTuJOC7Rnj56DaagMWuNBC5H24cgnFMoOJ22vWgab4RAJ2wiX8H8CMndlEgpXJnul/x91vwDEBT1mnY5JQhnCszdNMXMWvQuH+KdhXtHI="}
+[14:06:50.957]: logged in

@@ -1,26 +1,5 @@
-23 Apr 2024 19:20:16 GMT [ERROR] Couldnt connect, socket exception!
+Error: Unable to access jarfile C:\Users\l.paepke\Downloads\projects\GameLauncher\ClientGames\uno\client\UNO_CLIENT.jar
 
 
 
 
-23 Apr 2024 19:19:52 GMT [INFO]  Init complete
-23 Apr 2024 19:19:53 GMT [INFO]  0 -> took 250 ms
-23 Apr 2024 19:19:53 GMT [INFO]  jar:file:/C:/Users/lukas/IdeaProjects/GameLauncher/ClientGames/uno/client/UNO_CLIENT.jar!/textures/texture.png
-23 Apr 2024 19:19:53 GMT [INFO]  Loading texture
-23 Apr 2024 19:19:53 GMT [INFO]  Loaded texture
-23 Apr 2024 19:19:53 GMT [INFO]  1 -> took 190 ms
-23 Apr 2024 19:19:53 GMT [INFO]  Textures loaded
-23 Apr 2024 19:19:53 GMT [INFO]  2 -> took 4 ms
-23 Apr 2024 19:19:53 GMT [INFO]  3 -> took 2 ms
-23 Apr 2024 19:19:53 GMT [INFO]  4 -> took 4 ms
-23 Apr 2024 19:19:53 GMT [INFO]  5 -> took 133 ms
-23 Apr 2024 19:19:53 GMT [INFO]  6 -> took 171 ms
-23 Apr 2024 19:19:53 GMT [INFO]  7 -> took 62 ms
-23 Apr 2024 19:19:53 GMT [INFO]  8 -> took 71 ms
-23 Apr 2024 19:19:54 GMT [INFO]  9 -> took 300 ms
-23 Apr 2024 19:19:54 GMT [INFO]  10 -> took 0 ms
-23 Apr 2024 19:19:54 GMT [INFO]  11 -> took 18 ms
-23 Apr 2024 19:19:54 GMT [INFO]  12 -> took 0 ms
-23 Apr 2024 19:19:54 GMT [INFO]  Started sender
-23 Apr 2024 19:19:54 GMT [INFO]  13 -> took 321 ms
-23 Apr 2024 19:20:16 GMT [INFO]  Connection refused: connect

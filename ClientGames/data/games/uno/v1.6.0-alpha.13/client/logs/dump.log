@@ -1,0 +1,30 @@
+
+
+
+
+0 -> took 497 ms
+jar:file:/C:/Users/l.paepke/Downloads/projects/GameLauncher/ClientGames/data/games/uno/v1.6.0-alpha.13/client/UNO_CLIENT.jar!/textures/texture.png
+45.93.249.98
+[13:30:43.223]: Starting sender
+[13:30:43.458]: Reply recieved
+Loading texture
+Loaded texture
+1 -> took 1422 ms
+Textures loaded
+[13:30:43.970]: Reply recieved
+2 -> took 24 ms
+3 -> took 15 ms
+[13:30:44.022]: logged in
+4 -> took 44 ms
+5 -> took 152 ms
+6 -> took 64 ms
+7 -> took 24 ms
+8 -> took 64 ms
+9 -> took 543 ms
+10 -> took 1 ms
+11 -> took 69 ms
+12 -> took 74 ms
+13 -> took 1 ms
+[13:30:45.028]: Starting sender
+14 -> took 213 ms
+Game end

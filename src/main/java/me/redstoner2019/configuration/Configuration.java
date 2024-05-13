@@ -65,6 +65,7 @@ public class Configuration {
                     if(versionObject.has("alpha")) versionO.isAlpha = versionObject.getBoolean("alpha");
                     gameO.addVersion(versionO);
                     for(String type : versionObject.keySet()){
+                        if(type.equals("alpha")) continue;
                         JSONObject typeObject = versionObject.getJSONObject(type);
                         Type typeO = new Type(type);
                         versionO.addType(typeO);
