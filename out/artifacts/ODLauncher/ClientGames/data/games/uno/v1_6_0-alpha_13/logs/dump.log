@@ -1,0 +1,42 @@
+Couldnt connect, socket exception!
+
+
+
+
+0 -> took 184 ms
+jar:file:/C:/Users/Redstoner_2019/Projects/GameLauncher/out/artifacts/ODLauncher/ClientGames/data/games/uno/v1_6_0-alpha_13/client/UNO_CLIENT.jar!/textures/texture.png
+45.93.249.98
+[13:34:43.901]: Starting sender
+[13:34:44.424]: Reply recieved
+Loading texture
+Loaded texture
+1 -> took 658 ms
+Textures loaded
+[13:34:44.480]: Reply recieved
+2 -> took 20 ms
+3 -> took 1 ms
+[13:34:44.484]: not logged in
+4 -> took 3 ms
+5 -> took 16 ms
+6 -> took 8 ms
+7 -> took 3 ms
+8 -> took 6 ms
+9 -> took 58 ms
+10 -> took 1 ms
+11 -> took 8 ms
+12 -> took 6 ms
+13 -> took 0 ms
+[13:34:44.591]: Starting sender
+14 -> took 34 ms
+[13:35:29.892]: Starting Account Creation
+[13:35:29.916]: Sending Account Creation
+[13:35:29.940]: Reply recieved
+[13:35:29.940]: Returning Account Creation
+[13:35:34.405]: Login reply sent
+[13:35:35.359]: Reply recieved
+[13:35:35.360]: token data {"header":"login-complete","token":"kyulj+xGJkxrvyiCv6Rh/DN6mezXTM34vx/ZgskzHc3WeJfGhXFhG8Hxoxh/NRJK6a4gEdhtcec5662iU0fqAizrJzGY6HPx/w+sfY4XMFewN6xkEq4qF3W31A/CIUibmfJUF1qTCcdH7cmOjfrsub3W7oL9Dz+Uou1cFNKSZ0M="}
+[13:35:35.362]: logged in
+[13:35:39.795]: Connection refused: connect
+Game end
+Game end
+Game end
